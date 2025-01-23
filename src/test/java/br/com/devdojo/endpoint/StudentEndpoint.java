@@ -1,26 +1,53 @@
 package br.com.devdojo.endpoint;
 
-import br.com.devdojo.DateUtil;
+import br.com.devdojo.error.CustomErrorType;
 import br.com.devdojo.model.Student;
+import br.com.devdojo.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-
-import static java.util.Arrays.asList;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("student")
+@RequestMapping("students")
 
 public class StudentEndpoint {
+    private final StudentRepository studentDAO;
     @Autowired
-    private DateUtil dateUtil;
-    @RequestMapping(method = RequestMethod.GET, path = "/list")
-    public List<Student> listAll(){
-//        System.out.println(dateUtil.formatLocalDateTimeToDatabaseStyle(LocalDateTime.now()));
-        return asList(new Student("Botini"), new Student("Michele"));
+    public StudentEndpoint(StudentRepository studentDAO) {
+        this.studentDAO = studentDAO;
     }
+
+    @GetMapping
+    public ResponseEntity<?> listAll() {
+//        System.out.println(dateUtil.formatLocalDateTimeToDatabaseStyle(LocalDateTime.now()));
+        return new ResponseEntity<>(studentDAO.findAll(), HttpStatus.OK);
+    }
+
+    @GetMapping(path = "/{id}")
+    public ResponseEntity<?> getStudentById(@PathVariable("id") Long id) {
+        Student student = studentDAO.findById(id).get();
+        if(student == null) {
+            return new ResponseEntity<>(new CustomErrorType("Student not found"), HttpStatus.NOT_FOUND);
+        }else{
+            return new ResponseEntity<>(student, HttpStatus.OK);
+        }
+    }
+    @PostMapping
+    public ResponseEntity<?> save(@RequestBody Student student) {
+        return new ResponseEntity<>(studentDAO.save(student), HttpStatus.OK);
+    }
+
+    @DeleteMapping(path = "/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        studentDAO.deleteById(id);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+    @PutMapping
+    public ResponseEntity<?> update(@RequestBody Student student) {
+        studentDAO.save(student);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
 
 }
